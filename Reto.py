@@ -230,7 +230,7 @@ class Oficina(Model):
          
 
 flag = True
-model = Oficina("input5.txt")
+model = Oficina("input3.txt")
 MAX_ITERATIONS = (model.n * model.m)*4
 for i in range(MAX_ITERATIONS):
     model.step()
@@ -271,16 +271,20 @@ def animate(i):
         # Limpia cualquier texto anterior
         for txt in axs.texts:
             txt.remove()
-        
+
+        robot_labels = {109: "A", 105: "B", 106: "C", 107: "D", 108: "E"}
+
         # Recorre la matriz y verifica cada valor
         for row_idx, row in enumerate(numeric_grid):
             for col_idx, value in enumerate(row):
-                if value not in [0, 101, 102, 103]:
+                if value in robot_labels:
+                    axs.text(col_idx, row_idx, robot_labels[value], ha='center', va='center', color='white')
+                elif value not in [0, 101, 102, 103]:
                     # Muestra el valor en la celda roja como un entero
                     axs.text(col_idx, row_idx, str(int(value)), ha='center', va='center', color='white')
-        
+
         patch.set_data(numeric_grid)
-    
+
     else:
         pass
     
