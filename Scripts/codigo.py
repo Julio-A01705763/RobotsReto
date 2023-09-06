@@ -45,6 +45,7 @@ class Robot(Agent):
         self.go_zone = True
         self.target_position = target_position
         self.previous_pos = None
+        self.previous_pos_two = None
         self.i = 0
 
     def is_valid_position(self, pos):
@@ -69,9 +70,14 @@ class Robot(Agent):
             radius=radius
         )
 
-        return [pos for pos in possible_steps if self.is_valid_position(pos) and self.model.grid_data[pos[1]][pos[0]] not in disallowed_values]
+        if len(possible_steps) <= 2:
+            return [pos for pos in possible_steps if self.is_valid_position(pos) and self.model.grid_data[pos[1]][pos[0]] not in disallowed_values]
+        else:
+            return [pos for pos in possible_steps if self.is_valid_position(pos) and self.model.grid_data[pos[1]][pos[0]] not in disallowed_values and pos != self.previous_pos and pos != self.previous_pos_two]
 
     def move_to_position(self, next_position):
+        self.previous_pos_two = self.previous_pos 
+        self.previous_pos = self.pos
         self.model.grid_data[self.pos[1]][self.pos[0]] = self.original_cell_value
         self.original_cell_value = self.model.grid_data[next_position[1]][next_position[0]]
         self.model.grid.move_agent(self, next_position)
@@ -85,7 +91,7 @@ class Robot(Agent):
                 # Si aún no hemos llegado a la posición objetivo o estamos lo suficientemente cerca
                 distance_to_target = abs(self.pos[0] - self.target_position[0]) + abs(self.pos[1] - self.target_position[1])
 
-                if distance_to_target > 2:  # Asumo que quieres que esté dentro de un radio de 2 para considerarlo "cerca".
+                if distance_to_target > 3:  # Asumo que quieres que esté dentro de un radio de 2 para considerarlo "cerca".
                     # Moverse hacia la posición objetivo
                     self.map_colmena(self.get_possible_steps(self.pos))
                     possible_steps = self.get_filtered_possible_steps(self.pos)
@@ -102,7 +108,7 @@ class Robot(Agent):
                         self.go_zone = False
 
             else:
-                zero_positions = [(x, y) for y in range(len(model.colmena)) for x in range(len(model.colmena[0])) if model.colmena[y][x] == 0]
+                zero_positions = [(x, y) for y in range(self.zone[2], self.zone[3]) for x in range(self.zone[0], self.zone[1]) if model.colmena[y][x] == 0]
                 if not zero_positions:
                     self.mapping = False
                     return
@@ -111,7 +117,10 @@ class Robot(Agent):
 
                 target_position = zero_positions[0]
                 possible_steps = self.get_filtered_possible_steps(self.pos)
-                next_position = min(possible_steps, key=lambda pos: abs(pos[0] - target_position[0]) + abs(pos[1] - target_position[1]))
+                if possible_steps:
+                    next_position = min(possible_steps, key=lambda pos: abs(pos[0] - target_position[0]) + abs(pos[1] - target_position[1]))
+                else:
+                    return
 
                 if self.is_valid_position(next_position):
                     self.move_to_position(next_position)
@@ -225,16 +234,21 @@ class Oficina(Model):
                     for z in range(5):
                         if z == 0:
                             target_position = (0,0)
+                            zone=[0,int(m/2),0,int(n/2)]
                         elif z == 1:
                             target_position = (0,n)
+                            zone=[int(m/2),int(m),int(0),int(n/2)]
                         elif z == 2:
                             target_position = (m,n)
+                            zone=[0,int(m/2),int(n/2),n]
                         elif z == 3:
                             target_position = (m,0)
+                            zone=[int(m/2),m,int(n/2),n]
                         elif z == 4:
                             target_position = (m/2,n/2)
-
-                        robot = Robot(z+105, self, (x, y), self.trash_bin, target_position)
+                            zone=[int(m/4),int((3*m)/4),int(n/4),int((3*n)/4)]
+                        
+                        robot = Robot(z+105, self, (x, y), self.trash_bin, target_position,zone)
                         self.grid.place_agent(robot, (x, y))
                         self.schedule.add(robot)
 
